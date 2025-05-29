@@ -1,5 +1,6 @@
 package com.example.DestroyableToy.service;
 
+import com.example.DestroyableToy.model.CategoryOverview;
 import com.example.DestroyableToy.model.Product;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +41,22 @@ public class ProductService {
         products.remove(id);
     }
 
+    public Product refillStock(long id) {
+        Product product = products.get(id);
+        if (product != null) {
+            product.setStock(product.getStock()+ 10);
+        }
+        return product;
+    }
+
+    public Product emptyStock(long id) {
+        Product product = products.get(id);
+        if (product != null) {
+            product.setStock(0);
+        }
+        return product;
+    }
+
     public void insertMockData() {
         createProduct(new Product(null, "Leche Entera", 1.99f, 50, "Lácteos", LocalDate.of(2025, 6, 1)));
         createProduct(new Product(null, "Pan Integral", 0.99f, 100, "Panadería", LocalDate.of(2025, 5, 30)));
@@ -57,6 +74,32 @@ public class ProductService {
         createProduct(new Product(null, "Pechuga de Pollo", 6.49f, 45, "Carnes", LocalDate.of(2025, 5, 28)));
         createProduct(new Product(null, "Helado de Vainilla", 3.75f, 70, "Congelados", LocalDate.of(2026, 1, 5)));
     }
+
+    public List<CategoryOverview> getProductOverviewByCategory() {
+        Map<String, List<Product>> grouped = new HashMap<>();
+
+        for (Product product : products.values()) {
+            grouped.computeIfAbsent(product.getCategory(), k -> new ArrayList<>()).add(product);
+        }
+
+        List<CategoryOverview> overviewList = new ArrayList<>();
+
+        for (Map.Entry<String, List<Product>> entry : grouped.entrySet()) {
+            String category = entry.getKey();
+            List<Product> productList = entry.getValue();
+
+            int totalStock = productList.stream().mapToInt(Product::getStock).sum();
+            float totalValue = (float) productList.stream()
+                    .mapToDouble(p -> p.getPrice() * p.getStock())
+                    .sum();
+            float averagePrice = productList.isEmpty() ? 0 : totalValue / totalStock;
+
+            overviewList.add(new CategoryOverview(category, totalStock, totalValue, averagePrice));
+        }
+
+        return overviewList;
+    }
+
 
 
 }
